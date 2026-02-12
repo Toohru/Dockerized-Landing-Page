@@ -1,0 +1,174 @@
+/* style.css */
+
+:root {
+    /* Palette */
+    --bground-colour: #1f4b58;   
+    --fground-colour: #122e36;   
+    --cground-colour: #2f7286;   
+    --highlights-colour: #00bfd8; 
+    --primtext-colour: #ffffff;
+    
+    /* Glass Variables */
+    --glass-bg: rgba(255, 255, 255, 0.15);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bground-colour);
+    color: var(--primtext-colour);
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* --- BACKGROUND LAYER --- */
+.background-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bground-colour);
+    z-index: 0; 
+    overflow: hidden;
+    pointer-events: none; 
+}
+
+.blob {
+    position: absolute;
+    will-change: border-radius, transform;
+}
+
+.blob-1 {
+    background-color: var(--fground-colour);
+    width: 90vmax;
+    height: 90vmax;
+    bottom: -25vmax;
+    left: -25vmax;
+    animation: rotateBase 50s linear infinite, morphBase 20s ease-in-out infinite alternate;
+}
+
+.blob-2 {
+    background-color: var(--cground-colour);
+    width: 80vmax;
+    height: 80vmax;
+    top: -20vmax;
+    right: -20vmax;
+    animation: rotateReverse 60s linear infinite, morphMid 25s ease-in-out infinite alternate;
+}
+
+.blob-3 {
+    background-color: var(--highlights-colour);
+    width: 35vmax;
+    height: 35vmax;
+    top: 20%;
+    left: 20%;
+    animation: chaoticFloat 30s ease-in-out infinite alternate, morphHigh 10s ease-in-out infinite alternate;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes rotateBase { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes rotateReverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+
+@keyframes morphBase { 
+    0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; } 
+    100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } 
+}
+@keyframes morphMid { 
+    0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } 
+    100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; } 
+}
+@keyframes morphHigh { 
+    0% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; } 
+    50% { border-radius: 80% 20% 40% 60% / 50% 60% 30% 60%; } 
+    100% { border-radius: 40% 60% 20% 80% / 60% 30% 70% 40%; } 
+}
+@keyframes chaoticFloat { 
+    0% { transform: translate(0, 0) rotate(0deg); } 
+    100% { transform: translate(15vw, 5vh) rotate(135deg); } 
+}
+
+/* --- THE LAYOUT GRID --- */
+.ui-container {
+    position: relative;
+    z-index: 1;
+    height: 100vh; 
+    padding: 2rem;
+    box-sizing: border-box;
+    
+    display: grid;
+    /* The 3 Columns: 25% | 50% | 25% */
+    grid-template-columns: 0.75fr 2.5fr 0.5fr; 
+    gap: 1.5rem;
+}
+
+
+/* Column Wrappers */
+.col-left {
+    display: grid;
+    grid-template-rows: 0.25fr 1fr; /* 2 Rows */
+    gap: 1.5rem;
+}
+
+.col-right {
+    display: grid;
+    grid-template-rows: 1fr 1fr 1fr 1fr; /* 4 Rows */
+    gap: 1.5rem;
+}
+
+/* --- GLASS COMPONENT --- */
+.glass-box {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px); 
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: var(--glass-shadow);
+    padding: 1.5rem;
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    transition: 0.3s;
+    
+    /* Ensure box fills its grid cell */
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.glass-box:hover {
+    background: rgba(255, 255, 255, 0.2); 
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Typography */
+h2 { margin: 0 0 10px 0; font-size: 1.3rem; opacity: 0.8; }
+h3 { margin: 0 0 10px 0; font-size: 1.4rem; opacity: 0.8; }
+h4 { margin: 0 0 10px 0; font-weight: bolder; font-size: 2rem; }
+
+p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
+.hero-text { font-size: 2.5rem; margin-bottom: 1rem; }
+
+/* Mobile Responsive */
+@media (max-width: 900px) {
+    .ui-container {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+    }
+    .col-left, .col-right {
+        display: flex;
+        flex-direction: column;
+    }
+    .glass-box {
+        min-height: 200px;
+    }
+}
