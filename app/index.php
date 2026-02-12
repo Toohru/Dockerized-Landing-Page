@@ -54,13 +54,6 @@ $links = $stmt->fetchAll();
 
         <div class="col-right">
             <div class="glass-box">
-                <img src="" alt="" srcset="" id="weather-icon">
-                <div class="description">
-                    <h2><div class="desc"></div></h2>
-                    <p><div class="c"></div></p>
-                </div>
-            </div>
-            <div class="glass-box">
                 <h4><div id="wearenow"></div></h4>
                 <h2><div id="wearenowlabel"></div></h2>
             </div>
