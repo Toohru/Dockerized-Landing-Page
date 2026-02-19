@@ -2,8 +2,10 @@
 
 $host = 'db';
 $db   = 'LandingPageDB';
-$user = 'Administrator';
-$pass = 'AdministratorPass';
+$AdminUser = 'Administrator';
+$AdminPass = 'AdministratorPass';
+$ViewerUser = "Viewer";
+$ViewerPass = "ViewerPass";
 
 $pdo = new PDO(
     "mysql:host=$host;dbname=$db;charset=utf8mb4",

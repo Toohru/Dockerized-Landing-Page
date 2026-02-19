@@ -8,6 +8,8 @@ services:
       - "8080:80"
     volumes:
       - ./app:/var/www/html
+    env_file:
+      - .env
     depends_on:
       - db
 
@@ -16,8 +18,6 @@ services:
     environment:
       MARIADB_DATABASE: LandingPageDB
       MARIADB_ROOT_PASSWORD: rootpass
-      MARIADB_USER: Administrator
-      MARIADB_PASSWORD: AdministratorPass
     volumes:
       - db_data:/var/lib/mysql
       - ./docker/db/init:/docker-entrypoint-initdb.d
