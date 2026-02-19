@@ -5,7 +5,7 @@
     --bground-colour: #1f4b58;   
     --fground-colour: #122e36;   
     --cground-colour: #2f7286;   
-    --highlights-colour: #00bfd8; 
+    --highlights-colour: #008697; 
     --primtext-colour: #ffffff;
     
     /* Glass Variables */
@@ -236,6 +236,18 @@ p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* --- SETTINGS LINK --- */
+.settings-link {
+    text-decoration: none;
+    color: var(--primtext-colour);
+    cursor: pointer;
+}
+
+.settings-link:hover {
+    border-color: var(--highlights-colour);
+    box-shadow: 0 12px 40px rgba(0, 191, 216, 0.2), var(--glass-shadow);
 }
 
 /* Mobile Responsive */

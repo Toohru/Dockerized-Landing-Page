@@ -1,6 +1,7 @@
 <?php
 require 'includes/db.php';
 
+$pdo = getDb('viewer');
 $stmt = $pdo->query("
     SELECT name, url
     FROM def_links
@@ -74,10 +75,10 @@ $links = $stmt->fetchAll();
                 <h4><div id="countdown"></div></h4>
                 <h2><div id="countdowntolabel"></div></h2>
             </div>
-            <div class="glass-box">
-                <h2>Settings</h2>
-                <p>at some point</p>
-            </div>
+            <a href="/admin/" class="glass-box settings-link">
+                <h2>⚙ Settings</h2>
+                <p>Manage links</p>
+            </a>
         </div>
 
     </div>
