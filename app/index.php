@@ -47,27 +47,29 @@ $links = $stmt->fetchAll();
         </div>
 
         <div class="col-mid">
-            <div class="links-grid">
-                <?php foreach ($links as $link): 
-                    $parsedUrl = parse_url($link['url']);
-                    $domain = $parsedUrl['host'] ?? '';
-                    $faviconUrl = "https://www.google.com/s2/favicons?domain=" . urlencode($domain) . "&sz=128";
-                ?>
-                <a class="link-card glass-box"
-                   href="<?= htmlspecialchars($link['url']) ?>"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                    <img class="link-icon" 
-                         src="<?= htmlspecialchars($faviconUrl) ?>" 
-                         alt="<?= htmlspecialchars($link['name']) ?>"
-                         loading="lazy"
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div class="link-icon-fallback" style="display:none;">
-                        <?= strtoupper(mb_substr($link['name'], 0, 1)) ?>
-                    </div>
-                    <span class="link-name"><?= htmlspecialchars($link['name']) ?></span>
-                </a>
-                <?php endforeach; ?>
+            <div class="links-wrapper">
+                <div class="links-grid">
+                    <?php foreach ($links as $link): 
+                        $parsedUrl = parse_url($link['url']);
+                        $domain = $parsedUrl['host'] ?? '';
+                        $faviconUrl = "https://www.google.com/s2/favicons?domain=" . urlencode($domain) . "&sz=128";
+                    ?>
+                    <a class="link-card glass-box"
+                       href="<?= htmlspecialchars($link['url']) ?>"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img class="link-icon" 
+                             src="<?= htmlspecialchars($faviconUrl) ?>" 
+                             alt="<?= htmlspecialchars($link['name']) ?>"
+                             loading="lazy"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="link-icon-fallback" style="display:none;">
+                            <?= strtoupper(mb_substr($link['name'], 0, 1)) ?>
+                        </div>
+                        <span class="link-name"><?= htmlspecialchars($link['name']) ?></span>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </div>
 
