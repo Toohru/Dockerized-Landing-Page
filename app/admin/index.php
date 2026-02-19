@@ -1,5 +1,7 @@
 <?php
 require __DIR__ . '/../includes/db.php';
+require __DIR__ . '/../includes/theme.php';
+require __DIR__ . '/../includes/backgrounds.php';
 
 $pdo = getDb('admin');
 $message = '';
@@ -8,160 +10,385 @@ $editLink = null;
 
 // --- Handle form actions ---
 
-// DELETE
-if (isset($_POST['action']) && $_POST['action'] === 'delete') {
-    $stmt = $pdo->prepare("DELETE FROM def_links WHERE id = ?");
-    $stmt->execute([$_POST['id']]);
-    $message = 'Link deleted.';
-    $messageType = 'success';
-}
+if (isset($_POST['action'])) {
+    switch ($_POST['action']) {
+        case 'delete':
+            $stmt = $pdo->prepare("DELETE FROM def_links WHERE id = ?");
+            $stmt->execute([$_POST['id']]);
+            $message = 'Link deleted.';
+            $messageType = 'success';
+            break;
 
-// ADD
-if (isset($_POST['action']) && $_POST['action'] === 'add') {
-    $name = trim($_POST['name'] ?? '');
-    $url  = trim($_POST['url'] ?? '');
-    if ($name !== '' && $url !== '') {
-        $stmt = $pdo->prepare("INSERT INTO def_links (name, url) VALUES (?, ?)");
-        $stmt->execute([$name, $url]);
-        $message = 'Link added.';
-        $messageType = 'success';
-    } else {
-        $message = 'Name and URL are required.';
-        $messageType = 'error';
+        case 'add':
+            $name = trim($_POST['name'] ?? '');
+            $url  = trim($_POST['url'] ?? '');
+            if ($name !== '' && $url !== '') {
+                $stmt = $pdo->prepare("INSERT INTO def_links (name, url) VALUES (?, ?)");
+                $stmt->execute([$name, $url]);
+                $message = 'Link added.';
+                $messageType = 'success';
+            } else {
+                $message = 'Name and URL are required.';
+                $messageType = 'error';
+            }
+            break;
+
+        case 'update':
+            $name = trim($_POST['name'] ?? '');
+            $url  = trim($_POST['url'] ?? '');
+            $id   = $_POST['id'] ?? '';
+            if ($name !== '' && $url !== '' && $id !== '') {
+                $stmt = $pdo->prepare("UPDATE def_links SET name = ?, url = ? WHERE id = ?");
+                $stmt->execute([$name, $url, $id]);
+                $message = 'Link updated.';
+                $messageType = 'success';
+            } else {
+                $message = 'All fields are required.';
+                $messageType = 'error';
+            }
+            break;
+
+        case 'set_theme':
+            $themeId = (int)($_POST['theme_id'] ?? 0);
+            if ($themeId > 0) {
+                $stmt = $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'active_theme'");
+                $stmt->execute([$themeId]);
+                $message = 'Theme updated.';
+                $messageType = 'success';
+            }
+            break;
+
+        case 'set_background':
+            $bgKey = $_POST['bg_key'] ?? '';
+            $allBgs = getBackgrounds();
+            if (isset($allBgs[$bgKey])) {
+                $stmt = $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'active_background'");
+                $stmt->execute([$bgKey]);
+                $message = 'Background updated.';
+                $messageType = 'success';
+            }
+            break;
+
+        case 'set_custom_theme':
+            $c1 = $_POST['colour1'] ?? '';
+            $c2 = $_POST['colour2'] ?? '';
+            $c3 = $_POST['colour3'] ?? '';
+            $pt = $_POST['primary_text'] ?? '';
+            $st = $_POST['secondary_text'] ?? '';
+            $hl = $_POST['highlight'] ?? '';
+            if ($c1 && $c2 && $c3 && $pt && $st && $hl) {
+                // Check if "Custom" theme already exists
+                $stmt = $pdo->query("SELECT id FROM themes WHERE name = 'Custom'");
+                $existing = $stmt->fetch();
+                $binC1 = hex2bin(ltrim($c1, '#'));
+                $binC2 = hex2bin(ltrim($c2, '#'));
+                $binC3 = hex2bin(ltrim($c3, '#'));
+                $binPt = hex2bin(ltrim($pt, '#'));
+                $binSt = hex2bin(ltrim($st, '#'));
+                $binHl = hex2bin(ltrim($hl, '#'));
+                if ($existing) {
+                    $stmt = $pdo->prepare("UPDATE themes SET colour1=?, colour2=?, colour3=?, primary_text_colour=?, secondary_text_colour=?, highlight_colour=? WHERE id=?");
+                    $stmt->execute([$binC1, $binC2, $binC3, $binPt, $binSt, $binHl, $existing['id']]);
+                    $customId = $existing['id'];
+                } else {
+                    $stmt = $pdo->prepare("INSERT INTO themes (name, colour1, colour2, colour3, primary_text_colour, secondary_text_colour, highlight_colour) VALUES ('Custom',?,?,?,?,?,?)");
+                    $stmt->execute([$binC1, $binC2, $binC3, $binPt, $binSt, $binHl]);
+                    $customId = $pdo->lastInsertId();
+                }
+                // Activate it
+                $stmt = $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'active_theme'");
+                $stmt->execute([$customId]);
+                $message = 'Custom theme saved & applied.';
+                $messageType = 'success';
+            }
+            break;
     }
 }
 
-// UPDATE
-if (isset($_POST['action']) && $_POST['action'] === 'update') {
-    $name = trim($_POST['name'] ?? '');
-    $url  = trim($_POST['url'] ?? '');
-    $id   = $_POST['id'] ?? '';
-    if ($name !== '' && $url !== '' && $id !== '') {
-        $stmt = $pdo->prepare("UPDATE def_links SET name = ?, url = ? WHERE id = ?");
-        $stmt->execute([$name, $url, $id]);
-        $message = 'Link updated.';
-        $messageType = 'success';
-    } else {
-        $message = 'All fields are required.';
-        $messageType = 'error';
-    }
-}
-
-// Check if we're editing
+// Check if editing a link
 if (isset($_GET['edit'])) {
     $stmt = $pdo->prepare("SELECT * FROM def_links WHERE id = ?");
     $stmt->execute([$_GET['edit']]);
     $editLink = $stmt->fetch();
 }
 
-// Fetch all links
+// Fetch data
 $links = $pdo->query("SELECT * FROM def_links ORDER BY name")->fetchAll();
+$themes = $pdo->query("SELECT * FROM themes ORDER BY name")->fetchAll();
+$activeTheme = loadActiveTheme($pdo);
+$activeThemeId = $activeTheme ? $activeTheme['id'] : 1;
+$activeBgKey = loadActiveBackground($pdo);
+$allBackgrounds = getBackgrounds();
+
+// Get current colours for custom modal pre-fill
+$curC1 = $activeTheme ? binToHex($activeTheme['colour1']) : '#0F172A';
+$curC2 = $activeTheme ? binToHex($activeTheme['colour2']) : '#111827';
+$curC3 = $activeTheme ? binToHex($activeTheme['colour3']) : '#1E293B';
+$curPt = $activeTheme ? binToHex($activeTheme['primary_text_colour']) : '#E5E7EB';
+$curSt = $activeTheme ? binToHex($activeTheme['secondary_text_colour']) : '#9CA3AF';
+$curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin — Manage Links</title>
-    <link rel="stylesheet" href="../css/styles.css">
+    <title>Admin — Settings</title>
+    <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="admin_styles.css">
+    <?php if ($activeTheme): ?>
+        <?= themeCSS($activeTheme) ?>
+    <?php endif; ?>
 </head>
 <body>
 
     <div class="background-container">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
+        <?= renderBackground($activeBgKey) ?>
     </div>
 
-    <div class="admin-container">
+    <!-- ===== BENTO GRID ===== -->
+    <div class="admin-bento">
 
-        <!-- Header -->
-        <div class="admin-header">
-            <h1>Manage Links</h1>
-            <a href="/" class="back-link">← Back to Home</a>
+        <!-- TOP BAR -->
+        <div class="admin-topbar">
+            <h1>Settings</h1>
+            <?php if ($message): ?>
+                <div class="toast <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
+            <?php endif; ?>
+            <a href="/" class="home-icon" title="Back to Home">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+            </a>
         </div>
 
-        <!-- Toast -->
-        <?php if ($message): ?>
-            <div class="toast <?= $messageType ?>">
-                <?= htmlspecialchars($message) ?>
-            </div>
-        <?php endif; ?>
+        <!-- LEFT COLUMN -->
+        <div class="admin-col-left">
 
-        <!-- Add / Edit Form -->
-        <div class="glass-box" style="height:auto; align-items:stretch;">
-            <h3 style="margin-bottom:0.8rem;">
-                <?= $editLink ? 'Edit Link' : 'Add New Link' ?>
-            </h3>
-            <form method="POST" class="admin-form"
-                  action="/admin/<?= $editLink ? '' : '' ?>">
-
-                <?php if ($editLink): ?>
-                    <input type="hidden" name="action" value="update">
-                    <input type="hidden" name="id" value="<?= $editLink['id'] ?>">
-                <?php else: ?>
-                    <input type="hidden" name="action" value="add">
-                <?php endif; ?>
-
-                <div class="form-row">
-                    <input type="text" name="name" placeholder="Name (e.g. Google)"
-                           value="<?= htmlspecialchars($editLink['name'] ?? '') ?>" required>
-                    <input type="url" name="url" placeholder="URL (e.g. https://google.com)"
-                           value="<?= htmlspecialchars($editLink['url'] ?? '') ?>" required>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <?= $editLink ? 'Save Changes' : 'Add Link' ?>
-                    </button>
+            <!-- Add / Edit Link (20%) -->
+            <div class="glass-box admin-box admin-box-form">
+                <h3><?= $editLink ? 'Edit Link' : 'Add New Link' ?></h3>
+                <form method="POST" class="admin-form" action="/admin/">
                     <?php if ($editLink): ?>
-                        <a href="/admin/" class="btn btn-cancel">Cancel</a>
+                        <input type="hidden" name="action" value="update">
+                        <input type="hidden" name="id" value="<?= $editLink['id'] ?>">
+                    <?php else: ?>
+                        <input type="hidden" name="action" value="add">
                     <?php endif; ?>
+                    <div class="form-row">
+                        <input type="text" name="name" placeholder="Name (e.g. Google)"
+                               value="<?= htmlspecialchars($editLink['name'] ?? '') ?>" required>
+                        <input type="url" name="url" placeholder="URL (e.g. https://google.com)"
+                               value="<?= htmlspecialchars($editLink['url'] ?? '') ?>" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <?= $editLink ? 'Save Changes' : 'Add Link' ?>
+                        </button>
+                        <?php if ($editLink): ?>
+                            <a href="/admin/" class="btn btn-cancel">Cancel</a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Current Links (80%) — internal scroll -->
+            <div class="glass-box admin-box admin-box-links">
+                <h3>Current Links</h3>
+                <div class="links-scroll">
+                    <?php if (empty($links)): ?>
+                        <div class="empty-state"><p>No links yet. Add one above.</p></div>
+                    <?php else: ?>
+                        <table class="links-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>URL</th>
+                                    <th style="text-align:right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($links as $link): ?>
+                                    <tr class="link-row">
+                                        <td><?= htmlspecialchars($link['name']) ?></td>
+                                        <td><span class="link-url"><?= htmlspecialchars($link['url']) ?></span></td>
+                                        <td>
+                                            <div class="row-actions">
+                                                <a href="/admin/?edit=<?= $link['id'] ?>" class="btn btn-sm">Edit</a>
+                                                <form method="POST" action="/admin/"
+                                                      onsubmit="return confirm('Delete <?= htmlspecialchars(addslashes($link['name'])) ?>?');">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="id" value="<?= $link['id'] ?>">
+                                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="admin-col-right">
+
+            <!-- Theme (50%) -->
+            <div class="glass-box admin-box admin-box-theme">
+                <div class="box-header">
+                    <h3>Theme</h3>
+                    <button type="button" class="btn btn-sm" onclick="document.getElementById('customModal').classList.add('open')">
+                        Custom
+                    </button>
+                </div>
+                <div class="picker-scroll">
+                    <div class="theme-grid">
+                        <?php foreach ($themes as $theme):
+                            $c1 = binToHex($theme['colour1']);
+                            $c2 = binToHex($theme['colour2']);
+                            $c3 = binToHex($theme['colour3']);
+                            $hl = binToHex($theme['highlight_colour']);
+                            $pt = binToHex($theme['primary_text_colour']);
+                            $isActive = ($theme['id'] == $activeThemeId);
+                        ?>
+                        <form method="POST" action="/admin/" class="theme-card-form">
+                            <input type="hidden" name="action" value="set_theme">
+                            <input type="hidden" name="theme_id" value="<?= $theme['id'] ?>">
+                            <button type="submit"
+                                    class="theme-card <?= $isActive ? 'theme-active' : '' ?>"
+                                    title="<?= htmlspecialchars($theme['name']) ?>">
+                                <div class="theme-swatches">
+                                    <span class="swatch" style="background:<?= $c1 ?>;"></span>
+                                    <span class="swatch" style="background:<?= $c2 ?>;"></span>
+                                    <span class="swatch" style="background:<?= $c3 ?>;"></span>
+                                    <span class="swatch swatch-accent" style="background:<?= $hl ?>;"></span>
+                                </div>
+                                <span class="theme-label" style="color:<?= $pt ?>; background:<?= $c1 ?>;">
+                                    <?= htmlspecialchars($theme['name']) ?>
+                                </span>
+                                <?php if ($isActive): ?>
+                                    <span class="theme-badge">Active</span>
+                                <?php endif; ?>
+                            </button>
+                        </form>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Background Animation (50%) -->
+            <div class="glass-box admin-box admin-box-bg">
+                <h3>Background</h3>
+                <div class="picker-scroll">
+                    <div class="bg-grid">
+                        <?php foreach ($allBackgrounds as $key => $bg):
+                            $isActive = ($key === $activeBgKey);
+                        ?>
+                        <form method="POST" action="/admin/" class="bg-card-form">
+                            <input type="hidden" name="action" value="set_background">
+                            <input type="hidden" name="bg_key" value="<?= htmlspecialchars($key) ?>">
+                            <button type="submit"
+                                    class="bg-card <?= $isActive ? 'bg-active' : '' ?>"
+                                    title="<?= htmlspecialchars($bg['name']) ?>">
+                                <div class="bg-preview">
+                                    <span class="bg-icon"><?= $bg['icon'] ?></span>
+                                </div>
+                                <span class="bg-label"><?= htmlspecialchars($bg['name']) ?></span>
+                                <?php if ($isActive): ?>
+                                    <span class="bg-badge">Active</span>
+                                <?php endif; ?>
+                            </button>
+                        </form>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===== CUSTOM COLOUR MODAL ===== -->
+    <div class="modal-overlay" id="customModal">
+        <div class="modal glass-box">
+            <div class="modal-header">
+                <h3>Custom Colours</h3>
+                <button type="button" class="modal-close" onclick="document.getElementById('customModal').classList.remove('open')">&times;</button>
+            </div>
+            <form method="POST" action="/admin/" class="modal-form">
+                <input type="hidden" name="action" value="set_custom_theme">
+
+                <div class="modal-preview" id="modalPreview">
+                    <div class="preview-blob preview-blob-1"></div>
+                    <div class="preview-blob preview-blob-2"></div>
+                    <div class="preview-glass">
+                        <span class="preview-primary">Primary Text</span>
+                        <span class="preview-secondary">Secondary Text</span>
+                        <span class="preview-highlight">Highlight</span>
+                    </div>
+                </div>
+
+                <div class="colour-fields">
+                    <label class="colour-field">
+                        <span>Background</span>
+                        <input type="color" name="colour1" value="<?= $curC1 ?>" oninput="updatePreview()">
+                    </label>
+                    <label class="colour-field">
+                        <span>Foreground</span>
+                        <input type="color" name="colour2" value="<?= $curC2 ?>" oninput="updatePreview()">
+                    </label>
+                    <label class="colour-field">
+                        <span>Accent</span>
+                        <input type="color" name="colour3" value="<?= $curC3 ?>" oninput="updatePreview()">
+                    </label>
+                    <label class="colour-field">
+                        <span>Primary Text</span>
+                        <input type="color" name="primary_text" value="<?= $curPt ?>" oninput="updatePreview()">
+                    </label>
+                    <label class="colour-field">
+                        <span>Secondary Text</span>
+                        <input type="color" name="secondary_text" value="<?= $curSt ?>" oninput="updatePreview()">
+                    </label>
+                    <label class="colour-field">
+                        <span>Highlight</span>
+                        <input type="color" name="highlight" value="<?= $curHl ?>" oninput="updatePreview()">
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="document.getElementById('customModal').classList.remove('open')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save & Apply</button>
                 </div>
             </form>
         </div>
-
-        <!-- Links List -->
-        <div class="glass-box" style="height:auto; align-items:stretch;">
-            <h3 style="margin-bottom:0.5rem;">Current Links</h3>
-
-            <?php if (empty($links)): ?>
-                <div class="empty-state">
-                    <p>No links yet. Add one above.</p>
-                </div>
-            <?php else: ?>
-                <table class="links-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>URL</th>
-                            <th style="text-align:right;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($links as $link): ?>
-                            <tr class="link-row">
-                                <td><?= htmlspecialchars($link['name']) ?></td>
-                                <td><span class="link-url"><?= htmlspecialchars($link['url']) ?></span></td>
-                                <td>
-                                    <div class="row-actions">
-                                        <a href="/admin/?edit=<?= $link['id'] ?>" class="btn">Edit</a>
-                                        <form method="POST" action="/admin/"
-                                              onsubmit="return confirm('Delete <?= htmlspecialchars(addslashes($link['name'])) ?>?');">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<?= $link['id'] ?>">
-                                            <button type="submit" class="btn btn-danger">Delete</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </div>
-
     </div>
+
+    <script>
+    function updatePreview() {
+        const f = document.querySelector('.modal-form');
+        const p = document.getElementById('modalPreview');
+        const c1 = f.colour1.value;
+        const c2 = f.colour2.value;
+        const c3 = f.colour3.value;
+        const pt = f.primary_text.value;
+        const st = f.secondary_text.value;
+        const hl = f.highlight.value;
+
+        p.style.background = c1;
+        p.querySelector('.preview-blob-1').style.background = c2;
+        p.querySelector('.preview-blob-2').style.background = c3;
+        p.querySelector('.preview-glass').style.borderColor = pt + '30';
+        p.querySelector('.preview-glass').style.background = pt + '15';
+        p.querySelector('.preview-primary').style.color = pt;
+        p.querySelector('.preview-secondary').style.color = st;
+        p.querySelector('.preview-highlight').style.color = hl;
+    }
+    // Init on load
+    document.addEventListener('DOMContentLoaded', updatePreview);
+    </script>
 
 </body>
 </html>

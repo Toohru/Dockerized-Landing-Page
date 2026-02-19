@@ -1,7 +1,13 @@
 <?php
 require 'includes/db.php';
+require 'includes/theme.php';
+require 'includes/backgrounds.php';
 
 $pdo = getDb('viewer');
+
+$activeTheme = loadActiveTheme($pdo);
+$activeBgKey = loadActiveBackground($pdo);
+
 $stmt = $pdo->query("
     SELECT name, url
     FROM def_links
@@ -9,8 +15,6 @@ $stmt = $pdo->query("
 ");
 $links = $stmt->fetchAll();
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,13 +22,14 @@ $links = $stmt->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Glass Bento Layout</title>
     <link rel="stylesheet" href="css/styles.css">
+    <?php if ($activeTheme): ?>
+        <?= themeCSS($activeTheme) ?>
+    <?php endif; ?>
 </head>
 <body>
 
     <div class="background-container">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
+        <?= renderBackground($activeBgKey) ?>
     </div>
 
     <div class="ui-container">
@@ -33,7 +38,7 @@ $links = $stmt->fetchAll();
             <div class="glass-box">
                 <h2><div id="currentdd"></div></h2>
                 <h4><div id="currenttt"></div></h4>
-                <h2><div id="week"></div><h2>
+                <h2><div id="week"></div></h2>
             </div>
             <div class="glass-box">
                 <h2>Sidebar Top</h2>
@@ -77,7 +82,7 @@ $links = $stmt->fetchAll();
             </div>
             <a href="/admin/" class="glass-box settings-link">
                 <h2>⚙ Settings</h2>
-                <p>Manage links</p>
+                <p>Manage links & theme</p>
             </a>
         </div>
 

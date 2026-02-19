@@ -16,3 +16,12 @@ CREATE TABLE themes (
     secondary_text_colour BINARY(3) NOT NULL,
     highlight_colour BINARY(3) NOT NULL
 );
+
+CREATE TABLE settings (
+    setting_key VARCHAR(50) PRIMARY KEY,
+    setting_value VARCHAR(255) NOT NULL
+);
+
+INSERT INTO settings (setting_key, setting_value) VALUES
+    ('active_theme', '1'),
+    ('active_background', 'blobs');

@@ -1,17 +1,19 @@
 /* style.css */
 
 :root {
-    /* Palette */
-    --bground-colour: #1f4b58;   
-    --fground-colour: #122e36;   
-    --cground-colour: #2f7286;   
-    --highlights-colour: #008697; 
-    --primtext-colour: #ffffff;
-    
-    /* Glass Variables */
-    --glass-bg: rgba(255, 255, 255, 0.15);
-    --glass-border: rgba(255, 255, 255, 0.3);
+    /* Fallback Palette — overridden by theme.php inline <style> */
+    --bground-colour: #0F172A;
+    --fground-colour: #111827;
+    --cground-colour: #1E293B;
+    --highlights-colour: #22D3EE;
+    --primtext-colour: #E5E7EB;
+    --sectext-colour: #9CA3AF;
+
+    /* Glass Variables — overridden by theme.php */
+    --glass-bg: rgba(229, 231, 235, 0.08);
+    --glass-border: rgba(229, 231, 235, 0.18);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    --highlight-rgb: 34, 211, 238;
 }
 
 body, html {
@@ -34,119 +36,62 @@ body, html {
     width: 100vw;
     height: 100vh;
     background-color: var(--bground-colour);
-    z-index: 0; 
+    z-index: 0;
     overflow: hidden;
-    pointer-events: none; 
-}
-
-.blob {
-    position: absolute;
-    will-change: border-radius, transform;
-}
-
-.blob-1 {
-    background-color: var(--fground-colour);
-    width: 90vmax;
-    height: 90vmax;
-    bottom: -25vmax;
-    left: -25vmax;
-    animation: rotateBase 50s linear infinite, morphBase 20s ease-in-out infinite alternate;
-}
-
-.blob-2 {
-    background-color: var(--cground-colour);
-    width: 80vmax;
-    height: 80vmax;
-    top: -20vmax;
-    right: -20vmax;
-    animation: rotateReverse 60s linear infinite, morphMid 25s ease-in-out infinite alternate;
-}
-
-.blob-3 {
-    background-color: var(--highlights-colour);
-    width: 35vmax;
-    height: 35vmax;
-    top: 20%;
-    left: 20%;
-    animation: chaoticFloat 30s ease-in-out infinite alternate, morphHigh 10s ease-in-out infinite alternate;
-}
-
-/* --- ANIMATIONS --- */
-@keyframes rotateBase { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes rotateReverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-
-@keyframes morphBase { 
-    0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; } 
-    100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } 
-}
-@keyframes morphMid { 
-    0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } 
-    100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; } 
-}
-@keyframes morphHigh { 
-    0% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; } 
-    50% { border-radius: 80% 20% 40% 60% / 50% 60% 30% 60%; } 
-    100% { border-radius: 40% 60% 20% 80% / 60% 30% 70% 40%; } 
-}
-@keyframes chaoticFloat { 
-    0% { transform: translate(0, 0) rotate(0deg); } 
-    100% { transform: translate(15vw, 5vh) rotate(135deg); } 
+    pointer-events: none;
 }
 
 /* --- THE LAYOUT GRID --- */
 .ui-container {
     position: relative;
     z-index: 1;
-    height: 100vh; 
+    height: 100vh;
     padding: 2rem;
     box-sizing: border-box;
-    
+
     display: grid;
-    /* The 3 Columns: 25% | 50% | 25% */
-    grid-template-columns: 0.75fr 2.5fr 0.5fr; 
+    grid-template-columns: 0.75fr 2.5fr 0.5fr;
     gap: 1.5rem;
 }
-
 
 /* Column Wrappers */
 .col-left {
     display: grid;
-    grid-template-rows: 0.25fr 1fr; /* 2 Rows */
+    grid-template-rows: 0.25fr 1fr;
     gap: 1.5rem;
 }
 
 .col-right {
     display: grid;
-    grid-template-rows: 1fr 1fr 1fr; /* 3 Rows */
+    grid-template-rows: 1fr 1fr 1fr;
     gap: 1.5rem;
 }
 
 /* --- GLASS COMPONENT --- */
 .glass-box {
     background: var(--glass-bg);
-    backdrop-filter: blur(20px); 
+    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     border-radius: 24px;
     box-shadow: var(--glass-shadow);
     padding: 1.5rem;
-    
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
     transition: 0.3s;
-    
-    /* Ensure box fills its grid cell */
+
     width: 100%;
     height: 100%;
     box-sizing: border-box;
 }
 
 .glass-box:hover {
-    background: rgba(255, 255, 255, 0.2); 
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(var(--highlight-rgb), 0.06);
+    border-color: rgba(var(--highlight-rgb), 0.25);
 }
 
 /* Typography */
@@ -154,7 +99,7 @@ h2 { margin: 0 0 10px 0; font-size: 1.3rem; opacity: 0.8; }
 h3 { margin: 0 0 10px 0; font-size: 1.4rem; opacity: 0.8; }
 h4 { margin: 0 0 10px 0; font-weight: bolder; font-size: 2rem; }
 
-p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
+p  { margin: 0; font-size: 0.9rem; opacity: 0.8; color: var(--sectext-colour); }
 .hero-text { font-size: 2.5rem; margin-bottom: 1rem; }
 
 /* --- LINKS GRID --- */
@@ -189,9 +134,9 @@ p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
 
 .link-card:hover {
     transform: translateY(-4px) scale(1.03);
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(var(--highlight-rgb), 0.12);
     border-color: var(--highlights-colour);
-    box-shadow: 0 12px 40px rgba(0, 191, 216, 0.2), var(--glass-shadow);
+    box-shadow: 0 12px 40px rgba(var(--highlight-rgb), 0.2), var(--glass-shadow);
 }
 
 .link-card:active {
@@ -204,10 +149,9 @@ p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
     height: 48px;
     object-fit: contain;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(var(--highlight-rgb), 0.08);
     padding: 6px;
     flex-shrink: 0;
-    /* Smoothly pop in */
     transition: opacity 0.3s ease;
 }
 
@@ -216,7 +160,7 @@ p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
     height: 48px;
     border-radius: 12px;
     background: var(--highlights-colour);
-    color: var(--primtext-colour);
+    color: var(--bground-colour);
     font-size: 1.4rem;
     font-weight: 700;
     display: flex;
@@ -247,7 +191,7 @@ p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
 
 .settings-link:hover {
     border-color: var(--highlights-colour);
-    box-shadow: 0 12px 40px rgba(0, 191, 216, 0.2), var(--glass-shadow);
+    box-shadow: 0 12px 40px rgba(var(--highlight-rgb), 0.2), var(--glass-shadow);
 }
 
 /* Mobile Responsive */
