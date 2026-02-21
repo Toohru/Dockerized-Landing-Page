@@ -23,7 +23,6 @@ function handleIconUpload(array $file, string $iconDir): ?string
         return null;
     }
 
-    // Validate file type
     $allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = $finfo->file($file['tmp_name']);
@@ -32,7 +31,6 @@ function handleIconUpload(array $file, string $iconDir): ?string
         return null;
     }
 
-    // Limit size to 2MB
     if ($file['size'] > 2 * 1024 * 1024) {
         return null;
     }
@@ -62,7 +60,6 @@ function handleIconUpload(array $file, string $iconDir): ?string
 if (isset($_POST['action'])) {
     switch ($_POST['action']) {
         case 'delete':
-            // Delete the icon file if it exists
             $stmt = $pdo->prepare("SELECT icon_path FROM def_links WHERE id = ?");
             $stmt->execute([$_POST['id']]);
             $row = $stmt->fetch();
@@ -109,7 +106,6 @@ if (isset($_POST['action'])) {
                 }
 
                 if ($iconPath || $removeIcon) {
-                    // Delete old icon file
                     $stmt = $pdo->prepare("SELECT icon_path FROM def_links WHERE id = ?");
                     $stmt->execute([$id]);
                     $old = $stmt->fetch();
@@ -209,6 +205,9 @@ $curC3 = $activeTheme ? binToHex($activeTheme['colour3']) : '#1E293B';
 $curPt = $activeTheme ? binToHex($activeTheme['primary_text_colour']) : '#E5E7EB';
 $curSt = $activeTheme ? binToHex($activeTheme['secondary_text_colour']) : '#9CA3AF';
 $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
+
+// Auto-open the edit modal if editing
+$openEditModal = $editLink ? true : false;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -245,65 +244,21 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
             </a>
         </div>
 
-        <!-- LEFT COLUMN -->
+        <!-- LEFT COLUMN — Full height links table -->
         <div class="admin-col-left">
-
-            <!-- Add / Edit Link -->
-            <div class="glass-box admin-box admin-box-form">
-                <h3><?= $editLink ? 'Edit Link' : 'Add New Link' ?></h3>
-                <form method="POST" class="admin-form" action="/admin/" enctype="multipart/form-data">
-                    <?php if ($editLink): ?>
-                        <input type="hidden" name="action" value="update">
-                        <input type="hidden" name="id" value="<?= $editLink['id'] ?>">
-                    <?php else: ?>
-                        <input type="hidden" name="action" value="add">
-                    <?php endif; ?>
-                    <div class="form-row">
-                        <input type="text" name="name" placeholder="Name (e.g. Google)"
-                               value="<?= htmlspecialchars($editLink['name'] ?? '') ?>" required>
-                        <input type="url" name="url" placeholder="URL (e.g. https://google.com)"
-                               value="<?= htmlspecialchars($editLink['url'] ?? '') ?>" required>
-                    </div>
-                    <div class="form-row icon-upload-row">
-                        <label class="icon-upload-label">
-                            <span class="icon-upload-text">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                                    <polyline points="21 15 16 10 5 21"/>
-                                </svg>
-                                <span id="iconFileName">Custom icon (optional)</span>
-                            </span>
-                            <input type="file" name="icon" accept="image/*" style="display:none"
-                                   onchange="document.getElementById('iconFileName').textContent = this.files[0] ? this.files[0].name : 'Custom icon (optional)';">
-                        </label>
-                        <?php if ($editLink && $editLink['icon_path']): ?>
-                            <div class="current-icon-preview">
-                                <img src="<?= htmlspecialchars($editLink['icon_path']) ?>" alt="Current icon" width="28" height="28">
-                                <label class="remove-icon-toggle">
-                                    <input type="checkbox" name="remove_icon" value="1">
-                                    <span>Remove</span>
-                                </label>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <?= $editLink ? 'Save Changes' : 'Add Link' ?>
-                        </button>
-                        <?php if ($editLink): ?>
-                            <a href="/admin/" class="btn btn-cancel">Cancel</a>
-                        <?php endif; ?>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Current Links — internal scroll -->
             <div class="glass-box admin-box admin-box-links">
-                <h3>Current Links</h3>
+                <div class="box-header">
+                    <h3>Current Links</h3>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="openLinkModal()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.3rem;">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Add Link
+                    </button>
+                </div>
                 <div class="links-scroll">
                     <?php if (empty($links)): ?>
-                        <div class="empty-state"><p>No links yet. Add one above.</p></div>
+                        <div class="empty-state"><p>No links yet. Click "Add Link" above.</p></div>
                     <?php else: ?>
                         <table class="links-table">
                             <thead>
@@ -338,7 +293,7 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
                                                       onsubmit="return confirm('Delete <?= htmlspecialchars(addslashes($link['name'])) ?>?');">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="id" value="<?= $link['id'] ?>">
-                                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                                    <button type="submit" class="btn btn-sm btn-danger">Del</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -349,7 +304,6 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
                     <?php endif; ?>
                 </div>
             </div>
-
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -429,6 +383,73 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
         </div>
     </div>
 
+    <!-- ===== ADD / EDIT LINK MODAL ===== -->
+    <div class="modal-overlay" id="linkModal">
+        <div class="modal glass-box">
+            <div class="modal-header">
+                <h3 id="linkModalTitle"><?= $editLink ? 'Edit Link' : 'Add New Link' ?></h3>
+                <button type="button" class="modal-close" onclick="closeLinkModal()">&times;</button>
+            </div>
+            <form method="POST" class="modal-form" action="/admin/" enctype="multipart/form-data" id="linkForm">
+                <?php if ($editLink): ?>
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="id" value="<?= $editLink['id'] ?>">
+                <?php else: ?>
+                    <input type="hidden" name="action" value="add">
+                <?php endif; ?>
+
+                <div class="link-modal-fields">
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="name" placeholder="e.g. Google"
+                               value="<?= htmlspecialchars($editLink['name'] ?? '') ?>" required
+                               class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">URL</label>
+                        <input type="url" name="url" placeholder="e.g. https://google.com"
+                               value="<?= htmlspecialchars($editLink['url'] ?? '') ?>" required
+                               class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Custom Icon <span style="opacity:0.5; font-weight:400;">(optional)</span></label>
+                        <label class="icon-upload-label">
+                            <span class="icon-upload-text">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                                <span id="iconFileName">Choose an image…</span>
+                            </span>
+                            <input type="file" name="icon" accept="image/*" style="display:none"
+                                   onchange="document.getElementById('iconFileName').textContent = this.files[0] ? this.files[0].name : 'Choose an image…';">
+                        </label>
+                    </div>
+                    <?php if ($editLink && $editLink['icon_path']): ?>
+                        <div class="form-group">
+                            <label class="form-label">Current Icon</label>
+                            <div class="current-icon-preview">
+                                <img src="<?= htmlspecialchars($editLink['icon_path']) ?>" alt="Current icon" width="32" height="32">
+                                <label class="remove-icon-toggle">
+                                    <input type="checkbox" name="remove_icon" value="1">
+                                    <span>Remove current icon</span>
+                                </label>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeLinkModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <?= $editLink ? 'Save Changes' : 'Add Link' ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ===== CUSTOM COLOUR MODAL ===== -->
     <div class="modal-overlay" id="customModal">
         <div class="modal glass-box">
@@ -485,8 +506,28 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
     </div>
 
     <script>
+    // --- Link Modal ---
+    function openLinkModal() {
+        document.getElementById('linkModal').classList.add('open');
+    }
+    function closeLinkModal() {
+        document.getElementById('linkModal').classList.remove('open');
+        // If we were editing, redirect back to clean admin page
+        <?php if ($editLink): ?>
+            window.location.href = '/admin/';
+        <?php endif; ?>
+    }
+
+    // Auto-open modal if editing
+    <?php if ($openEditModal): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            openLinkModal();
+        });
+    <?php endif; ?>
+
+    // --- Custom Theme Preview ---
     function updatePreview() {
-        const f = document.querySelector('.modal-form');
+        const f = document.querySelector('#customModal .modal-form');
         const p = document.getElementById('modalPreview');
         const c1 = f.colour1.value;
         const c2 = f.colour2.value;
