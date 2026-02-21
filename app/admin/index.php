@@ -8,11 +8,70 @@ $message = '';
 $messageType = '';
 $editLink = null;
 
+// Icon upload directory
+$iconDir = __DIR__ . '/../uploads/icons/';
+if (!is_dir($iconDir)) {
+    mkdir($iconDir, 0755, true);
+}
+
+/**
+ * Handle icon upload. Returns the relative path or null.
+ */
+function handleIconUpload(array $file, string $iconDir): ?string
+{
+    if ($file['error'] !== UPLOAD_ERR_OK || $file['size'] === 0) {
+        return null;
+    }
+
+    // Validate file type
+    $allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($file['tmp_name']);
+
+    if (!in_array($mime, $allowed, true)) {
+        return null;
+    }
+
+    // Limit size to 2MB
+    if ($file['size'] > 2 * 1024 * 1024) {
+        return null;
+    }
+
+    $ext = match ($mime) {
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/gif' => 'gif',
+        'image/svg+xml' => 'svg',
+        'image/webp' => 'webp',
+        'image/x-icon', 'image/vnd.microsoft.icon' => 'ico',
+        default => 'png',
+    };
+
+    $filename = uniqid('icon_', true) . '.' . $ext;
+    $dest = $iconDir . $filename;
+
+    if (move_uploaded_file($file['tmp_name'], $dest)) {
+        return '/uploads/icons/' . $filename;
+    }
+
+    return null;
+}
+
 // --- Handle form actions ---
 
 if (isset($_POST['action'])) {
     switch ($_POST['action']) {
         case 'delete':
+            // Delete the icon file if it exists
+            $stmt = $pdo->prepare("SELECT icon_path FROM def_links WHERE id = ?");
+            $stmt->execute([$_POST['id']]);
+            $row = $stmt->fetch();
+            if ($row && $row['icon_path']) {
+                $fullPath = __DIR__ . '/..' . $row['icon_path'];
+                if (file_exists($fullPath)) {
+                    unlink($fullPath);
+                }
+            }
             $stmt = $pdo->prepare("DELETE FROM def_links WHERE id = ?");
             $stmt->execute([$_POST['id']]);
             $message = 'Link deleted.';
@@ -23,8 +82,12 @@ if (isset($_POST['action'])) {
             $name = trim($_POST['name'] ?? '');
             $url  = trim($_POST['url'] ?? '');
             if ($name !== '' && $url !== '') {
-                $stmt = $pdo->prepare("INSERT INTO def_links (name, url) VALUES (?, ?)");
-                $stmt->execute([$name, $url]);
+                $iconPath = null;
+                if (isset($_FILES['icon'])) {
+                    $iconPath = handleIconUpload($_FILES['icon'], $iconDir);
+                }
+                $stmt = $pdo->prepare("INSERT INTO def_links (name, url, icon_path) VALUES (?, ?, ?)");
+                $stmt->execute([$name, $url, $iconPath]);
                 $message = 'Link added.';
                 $messageType = 'success';
             } else {
@@ -38,8 +101,30 @@ if (isset($_POST['action'])) {
             $url  = trim($_POST['url'] ?? '');
             $id   = $_POST['id'] ?? '';
             if ($name !== '' && $url !== '' && $id !== '') {
-                $stmt = $pdo->prepare("UPDATE def_links SET name = ?, url = ? WHERE id = ?");
-                $stmt->execute([$name, $url, $id]);
+                $iconPath = null;
+                $removeIcon = isset($_POST['remove_icon']) && $_POST['remove_icon'] === '1';
+
+                if (isset($_FILES['icon']) && $_FILES['icon']['error'] === UPLOAD_ERR_OK) {
+                    $iconPath = handleIconUpload($_FILES['icon'], $iconDir);
+                }
+
+                if ($iconPath || $removeIcon) {
+                    // Delete old icon file
+                    $stmt = $pdo->prepare("SELECT icon_path FROM def_links WHERE id = ?");
+                    $stmt->execute([$id]);
+                    $old = $stmt->fetch();
+                    if ($old && $old['icon_path']) {
+                        $fullPath = __DIR__ . '/..' . $old['icon_path'];
+                        if (file_exists($fullPath)) {
+                            unlink($fullPath);
+                        }
+                    }
+                    $stmt = $pdo->prepare("UPDATE def_links SET name = ?, url = ?, icon_path = ? WHERE id = ?");
+                    $stmt->execute([$name, $url, $removeIcon ? null : $iconPath, $id]);
+                } else {
+                    $stmt = $pdo->prepare("UPDATE def_links SET name = ?, url = ? WHERE id = ?");
+                    $stmt->execute([$name, $url, $id]);
+                }
                 $message = 'Link updated.';
                 $messageType = 'success';
             } else {
@@ -77,7 +162,6 @@ if (isset($_POST['action'])) {
             $st = $_POST['secondary_text'] ?? '';
             $hl = $_POST['highlight'] ?? '';
             if ($c1 && $c2 && $c3 && $pt && $st && $hl) {
-                // Check if "Custom" theme already exists
                 $stmt = $pdo->query("SELECT id FROM themes WHERE name = 'Custom'");
                 $existing = $stmt->fetch();
                 $binC1 = hex2bin(ltrim($c1, '#'));
@@ -95,7 +179,6 @@ if (isset($_POST['action'])) {
                     $stmt->execute([$binC1, $binC2, $binC3, $binPt, $binSt, $binHl]);
                     $customId = $pdo->lastInsertId();
                 }
-                // Activate it
                 $stmt = $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'active_theme'");
                 $stmt->execute([$customId]);
                 $message = 'Custom theme saved & applied.';
@@ -120,7 +203,6 @@ $activeThemeId = $activeTheme ? $activeTheme['id'] : 1;
 $activeBgKey = loadActiveBackground($pdo);
 $allBackgrounds = getBackgrounds();
 
-// Get current colours for custom modal pre-fill
 $curC1 = $activeTheme ? binToHex($activeTheme['colour1']) : '#0F172A';
 $curC2 = $activeTheme ? binToHex($activeTheme['colour2']) : '#111827';
 $curC3 = $activeTheme ? binToHex($activeTheme['colour3']) : '#1E293B';
@@ -166,10 +248,10 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
         <!-- LEFT COLUMN -->
         <div class="admin-col-left">
 
-            <!-- Add / Edit Link (20%) -->
+            <!-- Add / Edit Link -->
             <div class="glass-box admin-box admin-box-form">
                 <h3><?= $editLink ? 'Edit Link' : 'Add New Link' ?></h3>
-                <form method="POST" class="admin-form" action="/admin/">
+                <form method="POST" class="admin-form" action="/admin/" enctype="multipart/form-data">
                     <?php if ($editLink): ?>
                         <input type="hidden" name="action" value="update">
                         <input type="hidden" name="id" value="<?= $editLink['id'] ?>">
@@ -182,6 +264,29 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
                         <input type="url" name="url" placeholder="URL (e.g. https://google.com)"
                                value="<?= htmlspecialchars($editLink['url'] ?? '') ?>" required>
                     </div>
+                    <div class="form-row icon-upload-row">
+                        <label class="icon-upload-label">
+                            <span class="icon-upload-text">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                                <span id="iconFileName">Custom icon (optional)</span>
+                            </span>
+                            <input type="file" name="icon" accept="image/*" style="display:none"
+                                   onchange="document.getElementById('iconFileName').textContent = this.files[0] ? this.files[0].name : 'Custom icon (optional)';">
+                        </label>
+                        <?php if ($editLink && $editLink['icon_path']): ?>
+                            <div class="current-icon-preview">
+                                <img src="<?= htmlspecialchars($editLink['icon_path']) ?>" alt="Current icon" width="28" height="28">
+                                <label class="remove-icon-toggle">
+                                    <input type="checkbox" name="remove_icon" value="1">
+                                    <span>Remove</span>
+                                </label>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">
                             <?= $editLink ? 'Save Changes' : 'Add Link' ?>
@@ -193,7 +298,7 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
                 </form>
             </div>
 
-            <!-- Current Links (80%) — internal scroll -->
+            <!-- Current Links — internal scroll -->
             <div class="glass-box admin-box admin-box-links">
                 <h3>Current Links</h3>
                 <div class="links-scroll">
@@ -203,14 +308,27 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
                         <table class="links-table">
                             <thead>
                                 <tr>
+                                    <th>Icon</th>
                                     <th>Name</th>
                                     <th>URL</th>
                                     <th style="text-align:right;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($links as $link): ?>
+                                <?php foreach ($links as $link):
+                                    $parsedUrl = parse_url($link['url']);
+                                    $domain = $parsedUrl['host'] ?? '';
+                                ?>
                                     <tr class="link-row">
+                                        <td class="icon-cell">
+                                            <?php if ($link['icon_path']): ?>
+                                                <img src="<?= htmlspecialchars($link['icon_path']) ?>" alt="" width="24" height="24" class="table-icon">
+                                                <span class="icon-badge custom" title="Custom icon">✦</span>
+                                            <?php else: ?>
+                                                <img src="https://www.google.com/s2/favicons?domain=<?= urlencode($domain) ?>&sz=64" alt="" width="24" height="24" class="table-icon">
+                                                <span class="icon-badge auto" title="Auto-fetched">⟳</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?= htmlspecialchars($link['name']) ?></td>
                                         <td><span class="link-url"><?= htmlspecialchars($link['url']) ?></span></td>
                                         <td>
@@ -237,7 +355,7 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
         <!-- RIGHT COLUMN -->
         <div class="admin-col-right">
 
-            <!-- Theme (50%) -->
+            <!-- Theme -->
             <div class="glass-box admin-box admin-box-theme">
                 <div class="box-header">
                     <h3>Theme</h3>
@@ -280,7 +398,7 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
                 </div>
             </div>
 
-            <!-- Background Animation (50%) -->
+            <!-- Background Animation -->
             <div class="glass-box admin-box admin-box-bg">
                 <h3>Background</h3>
                 <div class="picker-scroll">
@@ -386,7 +504,6 @@ $curHl = $activeTheme ? binToHex($activeTheme['highlight_colour']) : '#22D3EE';
         p.querySelector('.preview-secondary').style.color = st;
         p.querySelector('.preview-highlight').style.color = hl;
     }
-    // Init on load
     document.addEventListener('DOMContentLoaded', updatePreview);
     </script>
 

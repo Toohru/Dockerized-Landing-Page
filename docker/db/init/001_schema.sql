@@ -3,7 +3,8 @@ USE LandingPageDB;
 CREATE TABLE def_links (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    url VARCHAR(255) NOT NULL
+    url VARCHAR(255) NOT NULL,
+    icon_path VARCHAR(255) DEFAULT NULL
 );
 
 CREATE TABLE themes (

@@ -1,11 +1,13 @@
 USE LandingPageDB;
 
-INSERT INTO def_links (name, url) VALUES
-('Google', 'https://www.google.com'),
-('Facebook', 'https://www.facebook.com'),
-('Twitter', 'https://www.twitter.com'),
-('Instagram', 'https://www.instagram.com'),
-('Youtube', 'https://www.youtube.com');
+INSERT INTO def_links (name, url, icon_path) VALUES
+('DAM', 'https://apps.det.wa.edu.au/dam/', '/uploads/icons/dam.png'),
+('Compass', 'https://coodanup-wa.compass.education/', '/uploads/icons/icon_699a05ec8c0a02.85888697.png'),
+('Connect', 'https://connect.det.wa.edu.au/', '/uploads/icons/connect.png'),
+('HRMIS', 'https://hrmis.det.wa.edu.au/psp/HRPRD/?cmd=login&languageCd=ENG&', '/uploads/icons/hrmis.png'),
+('OneDrive', 'https://educationwaeduau-my.sharepoint.com/', NULL),
+('Youtube',   'https://www.youtube.com',   NULL);
+
 
 INSERT INTO themes (name, colour1, colour2, colour3, primary_text_colour, secondary_text_colour, highlight_colour) VALUES
 ('Midnight Neon',        0x141B2D, 0x1A2236, 0x27304A, 0xE5E7EB, 0x9CA3AF, 0x22D3EE),
