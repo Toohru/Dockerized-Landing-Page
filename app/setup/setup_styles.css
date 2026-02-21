@@ -1,0 +1,458 @@
+/* ============================================
+   SETUP WIZARD STYLES
+   ============================================ */
+
+html, body {
+    overflow-y: auto;
+    height: 100%;
+}
+
+.setup-container {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.setup-card {
+    width: 680px;
+    max-width: 100%;
+    height: auto;
+    text-align: left;
+    justify-content: flex-start;
+    align-items: stretch;
+    padding: 2rem;
+    border-radius: 24px;
+}
+
+/* ---- Progress Bar ---- */
+.setup-progress {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+}
+
+.step-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--sectext-colour);
+    background: rgba(var(--highlight-rgb), 0.04);
+    transition: all 0.3s;
+}
+
+.progress-step.active .step-dot {
+    border-color: var(--highlights-colour);
+    background: rgba(var(--highlight-rgb), 0.2);
+    color: var(--primtext-colour);
+    box-shadow: 0 0 0 3px rgba(var(--highlight-rgb), 0.15);
+}
+
+.progress-step.done .step-dot {
+    border-color: var(--highlights-colour);
+    background: var(--highlights-colour);
+    color: var(--bground-colour);
+}
+
+.step-label {
+    font-size: 0.65rem;
+    font-weight: 500;
+    opacity: 0.4;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.progress-step.active .step-label,
+.progress-step.done .step-label {
+    opacity: 0.8;
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--glass-border);
+    margin: 0 0.3rem;
+    margin-bottom: 1.2rem;
+    transition: background 0.3s;
+}
+
+.step-line.done {
+    background: var(--highlights-colour);
+}
+
+/* ---- Step Content ---- */
+.setup-step h2 {
+    font-size: 1.3rem;
+    margin: 0 0 0.3rem 0;
+    opacity: 1;
+}
+
+.setup-desc {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    margin: 0 0 1.2rem 0;
+    line-height: 1.5;
+}
+
+.setup-toast {
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    animation: toastIn 0.3s ease;
+}
+.setup-toast.success {
+    background: rgba(var(--highlight-rgb), 0.15);
+    border: 1px solid rgba(var(--highlight-rgb), 0.35);
+}
+.setup-toast.error {
+    background: rgba(255, 80, 80, 0.2);
+    border: 1px solid rgba(255, 80, 80, 0.4);
+}
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Form Elements ---- */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.form-input {
+    padding: 0.6rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: rgba(var(--highlight-rgb), 0.05);
+    color: var(--primtext-colour);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-input::placeholder { color: var(--sectext-colour); opacity: 0.5; }
+.form-input:focus { border-color: var(--highlights-colour); }
+
+.setup-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    gap: 0.5rem;
+}
+
+/* ---- Auth Options ---- */
+.auth-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.auth-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    border: 1.5px solid var(--glass-border);
+    background: rgba(var(--highlight-rgb), 0.02);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.auth-option:hover {
+    border-color: rgba(var(--highlight-rgb), 0.3);
+    background: rgba(var(--highlight-rgb), 0.05);
+}
+
+.auth-option.selected {
+    border-color: var(--highlights-colour);
+    background: rgba(var(--highlight-rgb), 0.1);
+}
+
+.auth-option input[type="radio"] {
+    margin-top: 0.2rem;
+    accent-color: var(--highlights-colour);
+    flex-shrink: 0;
+}
+
+.auth-option-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.auth-option-content strong {
+    font-size: 0.85rem;
+}
+
+.auth-option-content span {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    line-height: 1.4;
+}
+
+/* ---- LDAP Fields ---- */
+.ldap-fields {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 14px;
+    background: rgba(var(--highlight-rgb), 0.03);
+    border: 1px solid var(--glass-border);
+}
+
+.ldap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+}
+
+.ldap-grid .full-width {
+    grid-column: 1 / -1;
+}
+
+/* ---- Links (Step 3) ---- */
+.setup-add-link {
+    margin-bottom: 1rem;
+}
+
+.add-link-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.add-link-row .form-input {
+    flex: 1;
+}
+
+.icon-upload-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px dashed var(--glass-border);
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+}
+
+.icon-upload-mini:hover {
+    opacity: 1;
+    border-color: rgba(var(--highlight-rgb), 0.4);
+}
+
+.setup-links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 280px;
+    overflow-y: auto;
+    margin-bottom: 0.5rem;
+    padding-right: 0.3rem;
+}
+
+.setup-links-list::-webkit-scrollbar { width: 4px; }
+.setup-links-list::-webkit-scrollbar-thumb { background: rgba(var(--highlight-rgb), 0.2); border-radius: 10px; }
+
+.setup-link-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    background: rgba(var(--highlight-rgb), 0.04);
+    border: 1px solid var(--glass-border);
+}
+
+.setup-link-icon {
+    border-radius: 4px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.setup-link-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.setup-link-url {
+    flex: 1;
+    font-size: 0.7rem;
+    opacity: 0.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.setup-empty {
+    text-align: center;
+    padding: 1.5rem;
+    opacity: 0.35;
+    font-size: 0.85rem;
+}
+
+/* ---- Theme/BG Pickers (Step 4) ---- */
+.theme-grid-setup {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+}
+
+.theme-card-radio {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.4rem;
+    border-radius: 10px;
+    border: 2px solid var(--glass-border);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+
+.theme-card-radio:hover {
+    border-color: rgba(var(--highlight-rgb), 0.4);
+}
+
+.theme-card-radio.selected {
+    border-color: var(--highlights-colour);
+    box-shadow: 0 0 0 1px var(--highlights-colour);
+}
+
+.theme-card-radio input { display: none; }
+
+.theme-card-radio .theme-swatches {
+    display: flex;
+    gap: 1px;
+    border-radius: 5px;
+    overflow: hidden;
+    height: 20px;
+}
+
+.theme-card-radio .theme-swatches span { flex: 1; }
+
+.theme-card-name {
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 0.15rem 0.3rem;
+    border-radius: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bg-grid-setup {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    gap: 0.5rem;
+}
+
+.bg-card-radio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.5rem 0.3rem;
+    border-radius: 10px;
+    border: 2px solid var(--glass-border);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.bg-card-radio:hover { border-color: rgba(var(--highlight-rgb), 0.4); }
+.bg-card-radio.selected { border-color: var(--highlights-colour); box-shadow: 0 0 0 1px var(--highlights-colour); }
+.bg-card-radio input { display: none; }
+.bg-card-icon { font-size: 1.2rem; }
+.bg-card-name { font-size: 0.6rem; font-weight: 600; opacity: 0.7; }
+
+/* ---- Done Step ---- */
+.setup-done {
+    text-align: center;
+}
+
+.done-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--highlights-colour);
+    color: var(--bground-colour);
+    font-size: 1.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+}
+
+/* ---- Buttons ---- */
+.btn {
+    padding: 0.55rem 1.1rem;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    color: var(--primtext-colour);
+    background: rgba(var(--highlight-rgb), 0.06);
+    text-decoration: none;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn:hover { background: rgba(var(--highlight-rgb), 0.15); border-color: rgba(var(--highlight-rgb), 0.4); }
+.btn:active { transform: scale(0.97); }
+.btn-sm { padding: 0.3rem 0.65rem; font-size: 0.75rem; }
+.btn-primary { background: rgba(var(--highlight-rgb), 0.2); border-color: rgba(var(--highlight-rgb), 0.45); }
+.btn-primary:hover { background: rgba(var(--highlight-rgb), 0.35); }
+.btn-danger { background: rgba(255,80,80,0.15); border-color: rgba(255,80,80,0.35); }
+.btn-danger:hover { background: rgba(255,80,80,0.3); }
+
+/* ---- Responsive ---- */
+@media (max-width: 700px) {
+    .setup-card { padding: 1.2rem; }
+    .ldap-grid { grid-template-columns: 1fr; }
+    .add-link-row { flex-wrap: wrap; }
+    .step-label { display: none; }
+}

@@ -2,8 +2,16 @@
 require __DIR__ . '/../includes/db.php';
 require __DIR__ . '/../includes/theme.php';
 require __DIR__ . '/../includes/backgrounds.php';
+require __DIR__ . '/../includes/auth.php';
 
 $pdo = getDb('admin');
+
+// Redirect to setup if not configured
+if (!isSetupComplete($pdo)) {
+    header('Location: /setup/');
+    exit;
+}
+
 $message = '';
 $messageType = '';
 $editLink = null;
