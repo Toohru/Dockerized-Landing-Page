@@ -3,7 +3,8 @@
  * auth.php — Identifies the current user.
  *
  * Reads auth_mode from settings:
- *   'remote_user' — trusts $_SERVER['REMOTE_USER'] (Apache Kerberos/NTLM)
+ *   'remote_user' — trusts IIS Windows Authentication (AUTH_USER / LOGON_USER)
+ *                   or Apache Kerberos/NTLM (REMOTE_USER) as fallback
  *   'header'      — trusts a reverse-proxy header (X-Forwarded-User)
  *   'none'        — no auth, all users share a single "default" profile
  *
@@ -24,18 +25,24 @@ function getCurrentUsername(PDO $pdo): ?string
 
     switch ($mode) {
         case 'remote_user':
-            // Apache sets this via mod_auth_kerb / mod_auth_ntlm / mod_authnz_ldap
-            $raw = $_SERVER['REMOTE_USER'] ?? $_SERVER['REDIRECT_REMOTE_USER'] ?? '';
+            // IIS Windows Authentication sets AUTH_USER and LOGON_USER.
+            // Apache mod_auth_kerb / mod_auth_ntlm sets REMOTE_USER.
+            // Check all variants so both web servers work without config changes.
+            $raw = $_SERVER['AUTH_USER']
+                ?? $_SERVER['LOGON_USER']
+                ?? $_SERVER['REMOTE_USER']
+                ?? $_SERVER['REDIRECT_REMOTE_USER']
+                ?? '';
             if ($raw !== '') {
-                // Strip DOMAIN\ prefix or @domain suffix
-                $username = $raw;
-                if (str_contains($username, '\\')) {
-                    $username = substr($username, strpos($username, '\\') + 1);
+                // Strip DOMAIN\ prefix (IIS: "SCHOOL\jsmith" → "jsmith")
+                if (str_contains($raw, '\\')) {
+                    $raw = substr($raw, strpos($raw, '\\') + 1);
                 }
-                if (str_contains($username, '@')) {
-                    $username = substr($username, 0, strpos($username, '@'));
+                // Strip @domain suffix (UPN: "jsmith@school.wa.edu.au" → "jsmith")
+                if (str_contains($raw, '@')) {
+                    $raw = substr($raw, 0, strpos($raw, '@'));
                 }
-                $username = strtolower(trim($username));
+                $username = strtolower(trim($raw));
             }
             break;
 

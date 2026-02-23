@@ -234,16 +234,24 @@ function secondstohhmmss(secs) {
 
 // Week calculator with specific term start dates
 
-// Define term start dates for 2025
+// WA DOE school term dates.
+// Verify each year at: https://www.education.wa.edu.au/school-term-dates
+const allTerms = [
+    // ── 2025 ──
+    { start: new Date(2025, 1,  3), end: new Date(2025, 3, 11), term: 1, year: 2025 }, // T1: Feb 3 – Apr 11
+    { start: new Date(2025, 3, 28), end: new Date(2025, 6,  4), term: 2, year: 2025 }, // T2: Apr 28 – Jul 4
+    { start: new Date(2025, 6, 21), end: new Date(2025, 8, 26), term: 3, year: 2025 }, // T3: Jul 21 – Sep 26
+    { start: new Date(2025, 9, 13), end: new Date(2025, 11,19), term: 4, year: 2025 }, // T4: Oct 13 – Dec 19
+    // ── 2026 (verify dates with WA DOE) ──
+    { start: new Date(2026, 1,  2), end: new Date(2026, 3,  9), term: 1, year: 2026 }, // T1: Feb 2 – Apr 9
+    { start: new Date(2026, 3, 27), end: new Date(2026, 6,  3), term: 2, year: 2026 }, // T2: Apr 27 – Jul 3
+    { start: new Date(2026, 6, 20), end: new Date(2026, 8, 25), term: 3, year: 2026 }, // T3: Jul 20 – Sep 25
+    { start: new Date(2026, 9, 12), end: new Date(2026, 11,18), term: 4, year: 2026 }, // T4: Oct 12 – Dec 18
+];
+
+// Legacy alias used by the Before Term 1 check below
 const termDates = {
-    term1Start: new Date(2025, 1, 3), // February 3, 2025 (Monday)
-    term1End: new Date(2025, 3, 11), // April 11, 2025 (Friday)
-    term2Start: new Date(2025, 3, 28), // April 28, 2025 (Monday)
-    term2End: new Date(2025, 6, 4), // July 4, 2025 (Friday)
-    term3Start: new Date(2025, 6, 21), // July 21, 2025 (Monday)
-    term3End: new Date(2025, 8, 26), // September 26, 2025 (Friday)
-    term4Start: new Date(2025, 9, 13), // October 13, 2025 (Monday)
-    term4End: new Date(2025, 11, 19) // December 19, 2025 (Friday)
+    term1Start: allTerms[0].start,
 };
 
 // Function to get the Monday of the current week
@@ -279,68 +287,33 @@ function getTermWeek(today, termStart) {
 function getCurrentTermAndWeek() {
     const today = new Date();
 
-    // Before Term 1
+    // Before first known term
     if (today < termDates.term1Start) {
         const diffTime = termDates.term1Start - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const diffWeeks = Math.ceil(diffDays / 7);
+        return diffWeeks > 1 ? `${diffWeeks} Weeks before Term 1` : `${diffWeeks} Week before Term 1`;
+    }
 
-        if (diffWeeks > 1) {
-            return `${diffWeeks} Weeks before Term 1`;
-        } else {
-            return `${diffWeeks} Week before Term 1`;
+    // Walk through all known terms in order
+    for (let i = 0; i < allTerms.length; i++) {
+        const t = allTerms[i];
+
+        // Inside this term
+        if (today >= t.start && today <= t.end) {
+            return `Term ${t.term} Week ${getTermWeek(today, t.start)}`;
+        }
+
+        // Between this term and the next
+        const next = allTerms[i + 1];
+        if (next && today > t.end && today < next.start) {
+            const mondayAfterTerm = new Date(t.end);
+            mondayAfterTerm.setDate(t.end.getDate() + (8 - t.end.getDay()) % 7);
+            return `Holiday Week ${getTermWeek(today, mondayAfterTerm)}`;
         }
     }
 
-    // Term 1
-    if (today >= termDates.term1Start && today <= termDates.term1End) {
-        const weekNumber = getTermWeek(today, termDates.term1Start);
-        return `Term 1 Week ${weekNumber}`;
-    }
-
-    // Holiday 1
-    if (today > termDates.term1End && today < termDates.term2Start) {
-        const mondayAfterTerm1 = new Date(termDates.term1End);
-        mondayAfterTerm1.setDate(mondayAfterTerm1.getDate() + (8 - mondayAfterTerm1.getDay()) % 7);
-        const weekNumber = getTermWeek(today, mondayAfterTerm1);
-        return `Holiday Week ${weekNumber}`;
-    }
-
-    // Term 2
-    if (today >= termDates.term2Start && today <= termDates.term2End) {
-        const weekNumber = getTermWeek(today, termDates.term2Start);
-        return `Term 2 Week ${weekNumber}`;
-    }
-
-    // Holiday 2
-    if (today > termDates.term2End && today < termDates.term3Start) {
-        const mondayAfterTerm2 = new Date(termDates.term2End);
-        mondayAfterTerm2.setDate(mondayAfterTerm2.getDate() + (8 - mondayAfterTerm2.getDay()) % 7);
-        const weekNumber = getTermWeek(today, mondayAfterTerm2);
-        return `Holiday Week ${weekNumber}`;
-    }
-
-    // Term 3
-    if (today >= termDates.term3Start && today <= termDates.term3End) {
-        const weekNumber = getTermWeek(today, termDates.term3Start);
-        return `Term 3 Week ${weekNumber}`;
-    }
-
-    // Holiday 3
-    if (today > termDates.term3End && today < termDates.term4Start) {
-        const mondayAfterTerm3 = new Date(termDates.term3End);
-        mondayAfterTerm3.setDate(mondayAfterTerm3.getDate() + (8 - mondayAfterTerm3.getDay()) % 7);
-        const weekNumber = getTermWeek(today, mondayAfterTerm3);
-        return `Holiday Week ${weekNumber}`;
-    }
-
-    // Term 4
-    if (today >= termDates.term4Start && today <= termDates.term4End) {
-        const weekNumber = getTermWeek(today, termDates.term4Start);
-        return `Term 4 Week ${weekNumber}`;
-    }
-
-    // After Term 4
+    // After all known terms
     return 'School Break';
 }
 

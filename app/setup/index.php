@@ -281,8 +281,8 @@ $activeBgKey = loadActiveBackground($pdo);
                                            <?= $curAuth==='remote_user'?'checked':'' ?>
                                            onchange="toggleLdapFields()">
                                     <div class="auth-option-content">
-                                        <strong>Windows / Kerberos (REMOTE_USER)</strong>
-                                        <span>Best for schools with Active Directory. Users are identified automatically by their Windows login. Requires Apache mod_auth_kerb or NTLM configured on your web server.</span>
+                                        <strong>Windows Authentication (Recommended for AD schools)</strong>
+                                        <span>IIS Windows Authentication identifies users automatically from their Windows login — no passwords, no extra config. Works out of the box on any domain-joined school server. install.ps1 enables this automatically.</span>
                                     </div>
                                 </label>
                                 <label class="auth-option <?= $curAuth==='header'?'selected':'' ?>">
