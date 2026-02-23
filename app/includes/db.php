@@ -1,13 +1,15 @@
 <?php
 
+require_once __DIR__ . '/../../config.php';
+
 function getDb(string $role = 'viewer'): PDO
 {
-    $host = 'db';
-    $db   = 'LandingPageDB';
+    $host = DB_HOST;
+    $db   = DB_NAME;
 
     $credentials = [
-        'admin'  => ['user' => 'Administrator', 'pass' => 'AdministratorPass'],
-        'viewer' => ['user' => 'Viewer',        'pass' => 'ViewerPass'],
+        'admin'  => ['user' => DB_ADMIN_USER,  'pass' => DB_ADMIN_PASS],
+        'viewer' => ['user' => DB_VIEWER_USER, 'pass' => DB_VIEWER_PASS],
     ];
 
     $cred = $credentials[$role] ?? $credentials['viewer'];

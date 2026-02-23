@@ -2,25 +2,41 @@
 require 'includes/db.php';
 require 'includes/theme.php';
 require 'includes/backgrounds.php';
+require 'includes/auth.php';
 
 $pdo = getDb('viewer');
 
-$activeTheme = loadActiveTheme($pdo);
-$activeBgKey = loadActiveBackground($pdo);
+// Redirect to setup wizard if not configured yet
+if (!isSetupComplete($pdo)) {
+    header('Location: /setup/');
+    exit;
+}
 
-$stmt = $pdo->query("
-    SELECT name, url, icon_path
-    FROM def_links
-    ORDER BY name
-");
-$links = $stmt->fetchAll();
+// Identify the current user
+$username = getCurrentUsername($pdo);
+$userProfile = getOrCreateUserProfile($pdo, $username);
+
+// Load user-specific or default settings
+$activeTheme = getThemeForUser($pdo, $userProfile);
+$activeBgKey = getBackgroundForUser($pdo, $userProfile);
+$links = getLinksForUser($pdo, $userProfile);
+
+// School name
+$stmtSchool = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'school_name'");
+$schoolName = ($stmtSchool->fetch())['setting_value'] ?? 'Landing Page';
+
+// Display name
+$displayName = null;
+if ($userProfile) {
+    $displayName = $userProfile['display_name'] ?: $userProfile['username'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glass Bento Layout</title>
+    <title><?= htmlspecialchars($schoolName) ?></title>
     <link rel="stylesheet" href="css/styles.css">
     <?php if ($activeTheme): ?>
         <?= themeCSS($activeTheme) ?>
@@ -41,8 +57,13 @@ $links = $stmt->fetchAll();
                 <h2><div id="week"></div></h2>
             </div>
             <div class="glass-box">
-                <h2>Sidebar Top</h2>
-                <p>Widget 1</p>
+                <?php if ($displayName): ?>
+                    <p style="opacity:0.5;font-size:0.75rem;">Signed in as</p>
+                    <h3 style="margin:0.3rem 0 0 0;"><?= htmlspecialchars($displayName) ?></h3>
+                <?php else: ?>
+                    <h2><?= htmlspecialchars($schoolName) ?></h2>
+                    <p>Welcome</p>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -57,7 +78,6 @@ $links = $stmt->fetchAll();
                     <input type="text" id="searchInput" class="search-input" placeholder="Search links or the web..." autocomplete="off" autofocus>
                     <span class="search-hint" id="searchHint"></span>
                 </div>
-                <!-- Search results dropdown -->
                 <div class="search-results" id="searchResults"></div>
             </div>
 
@@ -115,18 +135,13 @@ $links = $stmt->fetchAll();
     (function() {
         const searchInput = document.getElementById('searchInput');
         const searchHint = document.getElementById('searchHint');
-        const searchResults = document.getElementById('searchResults');
         const linksGrid = document.getElementById('linksGrid');
         const allCards = Array.from(linksGrid.querySelectorAll('.link-card'));
 
-        // Focus on load
         searchInput.focus();
 
-        let currentQuery = '';
-
         searchInput.addEventListener('input', function() {
-            currentQuery = this.value.trim().toLowerCase();
-            filterLinks(currentQuery);
+            filterLinks(this.value.trim().toLowerCase());
         });
 
         searchInput.addEventListener('keydown', function(e) {
@@ -134,34 +149,24 @@ $links = $stmt->fetchAll();
                 e.preventDefault();
                 const query = this.value.trim();
                 if (!query) return;
-
-                // Check if there are visible matching links
                 const visibleCards = allCards.filter(card => !card.classList.contains('search-hidden'));
-
                 if (visibleCards.length === 1) {
-                    // Open the single matching link
                     visibleCards[0].click();
                 } else if (visibleCards.length === 0 || (visibleCards.length === allCards.length && query)) {
-                    // No link matches — search the web
                     window.open('https://www.google.com/search?q=' + encodeURIComponent(query), '_blank');
                 } else if (visibleCards.length > 0 && visibleCards.length < allCards.length) {
-                    // Multiple matches — open the first one
                     visibleCards[0].click();
                 } else {
-                    // Default: web search
                     window.open('https://www.google.com/search?q=' + encodeURIComponent(query), '_blank');
                 }
             }
-
             if (e.key === 'Escape') {
                 this.value = '';
-                currentQuery = '';
                 filterLinks('');
                 this.blur();
             }
         });
 
-        // Re-focus search on any keypress when not focused on an input
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -171,36 +176,22 @@ $links = $stmt->fetchAll();
 
         function filterLinks(query) {
             if (!query) {
-                // Show all
-                allCards.forEach(card => {
-                    card.classList.remove('search-hidden');
-                    card.style.display = '';
-                });
+                allCards.forEach(card => { card.classList.remove('search-hidden'); card.style.display = ''; });
                 searchHint.textContent = '';
                 searchHint.classList.remove('visible');
                 return;
             }
-
             let matchCount = 0;
             allCards.forEach(card => {
                 const name = card.dataset.name || '';
                 if (name.includes(query)) {
-                    card.classList.remove('search-hidden');
-                    card.style.display = '';
-                    matchCount++;
+                    card.classList.remove('search-hidden'); card.style.display = ''; matchCount++;
                 } else {
-                    card.classList.add('search-hidden');
-                    card.style.display = 'none';
+                    card.classList.add('search-hidden'); card.style.display = 'none';
                 }
             });
-
-            if (matchCount === 0) {
-                searchHint.textContent = 'Enter ↵ to search the web';
-                searchHint.classList.add('visible');
-            } else {
-                searchHint.textContent = matchCount + ' match' + (matchCount !== 1 ? 'es' : '');
-                searchHint.classList.add('visible');
-            }
+            searchHint.textContent = matchCount === 0 ? 'Enter ↵ to search the web' : matchCount + ' match' + (matchCount !== 1 ? 'es' : '');
+            searchHint.classList.add('visible');
         }
     })();
     </script>

@@ -1,0 +1,11 @@
+# Generated config — contains DB credentials, never commit
+config.php
+
+# User uploads (school-specific content)
+app/uploads/icons/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
